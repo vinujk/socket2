@@ -106,8 +106,15 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
  	get_path_class_obj(class_obj_arr);
 
 	get_nexthop(inet_ntoa(receiver_ip), nhip);
-	if(strcmp(nhip, " ") == 0)
+	if(strcmp(nhip, " ") == 0) {
 		printf("reached the destiantion end os rsvp tunnel\n");
+		send_resv_message(sock, sender_ip, receiver_ip);
+	} else {
+		printf("send path msg nexthop is %s destination not reached\n", nhip);
+		send_path_message(sock, sender_ip, receiver_ip);
+	}
+		
+		
 	//printf("route = %s, nhip = %s, srcip = %s\n", route,inet_ntoa(receiver_ip),src_ip);
 	//if(strcmp(inet_ntoa(receiver_ip),src_ip) == 0)
         //		printf("====== destination reached\n");
@@ -120,7 +127,7 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
         }*/
 
         
-	while(class_obj_arr[i] != 0) {
+	/*while(class_obj_arr[i] != 0) {
 		class_obj = (struct class_obj*) (buffer + class_obj_arr[i]);
 		switch(class_obj->class_num) {
 			case SESSION:
@@ -144,7 +151,7 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
 				break;
 		}
 		i++;
-        }
+        }*/
 }
 
 

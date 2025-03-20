@@ -26,7 +26,7 @@ int is_ip_in_subnet(const char *ip, const char *subnet, int prefix_len) {
 
     // default route
     if(!(subnet_addr.s_addr & mask.s_addr))
-	return 1;
+	return 2;
 
     // Perform bitwise AND
     if ((ip_addr.s_addr & mask.s_addr) == (subnet_addr.s_addr & mask.s_addr)) {
@@ -199,11 +199,12 @@ int print_route(struct nlmsghdr* nl_header_answer)
 	//printf("src %s\n", inet_ntop(r->rtm_family, RTA_DATA(tb[RTA_PREFSRC]), buf, sizeof(buf)));
     }
 
-    if(is_ip_in_subnet(dest_ip, route, prefix_len)) {
+    if(is_ip_in_subnet(dest_ip, route, prefix_len) == 1) {
 	printf("next hop for destination ip %s is -> %s\n", dest_ip, nh);
 	printf("\n next hop --- %s\n", nh);
 	return 1;
     } else {
+	return 0;
 	//printf("------ dest ip not found\n");
     }
 
@@ -289,7 +290,7 @@ int get_route_dump_response(int sock)
             free(buf);
         }
 
-        if(print_route(h)) { //;
+        if(print_route(h)) { 
 		return 1;
 	}
 
