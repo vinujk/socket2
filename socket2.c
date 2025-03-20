@@ -20,7 +20,6 @@ char sender_ip[16];
 char receiver_ip[16];
 
 
-struct session* sess;
 struct session* path_head;
 struct session* resv_head;
 
@@ -37,6 +36,10 @@ void get_ip(char buffer[], char *sender_ip, char *receiver_ip) {
 } 	
 		
 int main() {
+
+    char sender_ip[16];
+    char receiver_ip[16];
+
     struct sockaddr_in addr;
     sock = socket(AF_INET, SOCK_RAW, RSVP_PROTOCOL);
     if (sock < 0) {
