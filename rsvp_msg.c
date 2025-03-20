@@ -106,7 +106,7 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
         //If not reached continue sendin label request path msg
 	get_nexthop(inet_ntoa(receiver_ip), nhip);
 	if(strcmp(nhip, " ") == 0) {
-		printf("reached the destiantion end os rsvp tunnel\n");
+		printf("****reached the destiantion, end oF rsvp tunnel***\n");
 		send_resv_message(sock, sender_ip, receiver_ip);
 	} else {
 		printf("send path msg nexthop is %s destination not reached\n", nhip);
@@ -273,11 +273,15 @@ void receive_resv_message(int sock, char buffer[], struct sockaddr_in sender_add
     struct in_addr sender_ip = temp->src_ip; //rsvp->sender_ip;
     struct in_addr receiver_ip = temp->dst_ip; //rsvp->receiver_ip;
 
+    struct label_object *label_obj = (struct label_object*)(buffer + START_RECV_LABEL);
+    printf("Received RESV message from %s with Label %d\n",
+	inet_ntoa(sender_addr.sin_addr), ntohl(label_obj->label));
+
     //check whether we ahve reached the head of RSVP tunnel
     //If not reached continue distributing the label  
     get_nexthop(inet_ntoa(sender_ip), nhip);
     if(strcmp(nhip, " ") == 0) {
-    	printf("reached the destiantion end os rsvp tunnel\n");
+	printf("****reached the destiantion, end oF rsvp tunnel***\n");
     } else {
         printf("send resv msg, nexthop is %s destination not reached\n", nhip);
         send_resv_message(sock, sender_ip, receiver_ip); 
