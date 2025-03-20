@@ -102,9 +102,8 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
         struct in_addr sender_ip = temp->src_ip; //rsvp->sender_ip;
         struct in_addr receiver_ip = temp->dst_ip; //rsvp->receiver_ip;
 
-        memset(class_obj_arr, 0, sizeof(class_obj_arr));
- 	get_path_class_obj(class_obj_arr);
-
+        //check whether we ahve reached the  End of RSVP tunnel
+        //If not reached continue sendin label request path msg
 	get_nexthop(inet_ntoa(receiver_ip), nhip);
 	if(strcmp(nhip, " ") == 0) {
 		printf("reached the destiantion end os rsvp tunnel\n");
@@ -126,8 +125,10 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
                 send_path_message();
         }*/
 
+	/*memset(class_obj_arr, 0, sizeof(class_obj_arr));
+        get_path_class_obj(class_obj_arr);
         
-	/*while(class_obj_arr[i] != 0) {
+	while(class_obj_arr[i] != 0) {
 		class_obj = (struct class_obj*) (buffer + class_obj_arr[i]);
 		switch(class_obj->class_num) {
 			case SESSION:
@@ -266,16 +267,33 @@ void receive_resv_message(int sock, char buffer[], struct sockaddr_in sender_add
 
     printf("Listening for RSVP-TE RESV messages...\n");
 
-    memset(class_obj_arr, 0, sizeof(class_obj_arr));
-    get_resv_class_obj(class_obj_arr);
-    struct label_object *label_obj;
-   
+    struct session_object *temp = (struct session_object*)(buffer+START_RECV_SESSION_OBJ);
+    printf(" %s   %s\n", inet_ntoa(temp->src_ip), inet_ntoa(temp->dst_ip));
+    
+    struct in_addr sender_ip = temp->src_ip; //rsvp->sender_ip;
+    struct in_addr receiver_ip = temp->dst_ip; //rsvp->receiver_ip;
+
+    //check whether we ahve reached the head of RSVP tunnel
+    //If not reached continue distributing the label  
+    get_nexthop(inet_ntoa(sender_ip), nhip);
+    if(strcmp(nhip, " ") == 0) {
+    	printf("reached the destiantion end os rsvp tunnel\n");
+    } else {
+        printf("send resv msg, nexthop is %s destination not reached\n", nhip);
+        send_resv_message(sock, sender_ip, receiver_ip); 
+    }
+ 
     /*if(dst_reached()) { //chk we have reached the dst or not
              // storE label in resv table
     } else {
              // get the nexthop, storE label n resv table and generate & send label 
              send_resv_message
     }*/
+
+
+/*    memset(class_obj_arr, 0, sizeof(class_obj_arr));
+    get_resv_class_obj(class_obj_arr);
+    struct label_object *label_obj;
  
     while(class_obj_arr[i] != 0) {
 	class_obj = (struct class_obj*) (buffer + class_obj_arr[i]);
@@ -296,6 +314,6 @@ void receive_resv_message(int sock, char buffer[], struct sockaddr_in sender_add
 			break;
         }
 	i++;
-    } 
+    }*/ 
 }
 
