@@ -1,7 +1,8 @@
-extern int get_nexthop(const char *, const char *nh_ip);
-
 #define PATH_MSG_TYPE 1   // RSVP-TE PATH Message Type
 #define RESV_MSG_TYPE 2   // RSVP-TE RESV Message Type
+//#deifne RECEIVE_PATH 1
+//#define RECEIVE_RESV 2
+#define IP_ADDRLEN 16
 
 #define SESSION 1
 #define HOP 3
@@ -135,4 +136,6 @@ void receive_resv_message(int, char[], struct sockaddr_in);
 void receive_path_message(int, char[], struct sockaddr_in);
 void get_resv_class_obj(int[]);
 void get_path_class_obj(int[]);
-
+int dst_reached(struct in_addr);
+void get_ip(char[], struct in_addr *, struct in_addr *);
+extern int get_nexthop(const char *, const char *nh_ip);

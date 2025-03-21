@@ -10,7 +10,6 @@
 extern int sock;
 struct in_addr sender_ip, receiver_ip;
 
-extern struct session* sess;
 extern struct session* path_head;
 extern struct session* resv_head;
 
@@ -35,12 +34,17 @@ void path_timer_handler(union sigval sv) {
                         temp = temp->next;
                         continue;
                 } else {
-                        printf("--------sending  vpath message\n");
+			if(temp->dest) {
+                        	printf("--------sending  path message\n");
 
-                        inet_pton(AF_INET, temp->sender, &sender_ip);
-                        inet_pton(AF_INET, temp->receiver, &receiver_ip);
-			// Send RSVP-TE PATH Message
-			send_path_message(sock, sender_ip, receiver_ip);
+                        	inet_pton(AF_INET, temp->sender, &sender_ip);
+                        	inet_pton(AF_INET, temp->receiver, &receiver_ip);
+				
+				// Send RSVP-TE PATH Message
+				send_path_message(sock, sender_ip, receiver_ip);
+			} else {
+				printf("not received resv msg\n");
+			}
                 }
                 temp = temp->next;
 	}
@@ -63,11 +67,18 @@ void resv_timer_handler(union sigval sv) {
                         temp = temp->next;
                         continue;
                 } else {
-                        printf("--------sebding resv message\n");
+			if(temp->dest) {
+	                        printf("--------sending resv message\n");
 
-                        inet_pton(AF_INET, temp->sender, &sender_ip);
-                        inet_pton(AF_INET, temp->receiver, &receiver_ip);
-                        send_resv_message(sock, sender_ip, receiver_ip);
+       		                inet_pton(AF_INET, temp->sender, &sender_ip);
+                	        inet_pton(AF_INET, temp->receiver, &receiver_ip);
+
+				// Send RSVP-TE RESV Message
+                       		send_resv_message(sock, sender_ip, receiver_ip);
+			} else {
+                                printf("not received path msg\n");
+                        }
+
                 }
                 temp = temp->next;
         }
