@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "timer-event.h"
 #include "rsvp_msg.h"
@@ -16,8 +17,22 @@ extern struct session* resv_head;
 #define TIMEOUT 90
 #define INTERVAL 30
 
-// Timer event handler for Path message
-//it will chk for resv message and if no path message received session will expire
+static timer_t path_timer;
+static timer_t resv_timer;
+
+void delete_timer(timer_t *timer_id) {
+        if(timer_delete(*timer_id)) {
+                perror("timer delete failed\n");
+                exit(EXIT_FAILURE);
+        }
+	free(timer_id);
+        printf(" timer delete sucessfully %p \n", timer_id);
+}
+
+//Timer event handler for seding PATH message
+//it will chk for RESV message every IntervaL
+//no RESV message received for TIMEOUT sec
+//session will expire
 void path_timer_handler(union sigval sv) {
 
 	time_t now = time(NULL);
@@ -27,7 +42,7 @@ void path_timer_handler(union sigval sv) {
         printf("path timer handler \n");
         while(temp != NULL) {
                 if((now - temp->last_path_time) > TIMEOUT) {
-                        printf("RSVP session expired: %s->%s\n",temp->sender, temp->receiver);
+                        printf("RSVP path session expired: %s\t-->%s\n",temp->sender, temp->receiver);
                         resv_head = delete_session(temp, temp->sender, temp->receiver);
                 } else if((now - temp->last_path_time) < INTERVAL) {
                         printf(" less than 30 sec\n");
@@ -48,10 +63,20 @@ void path_timer_handler(union sigval sv) {
                 }
                 temp = temp->next;
 	}
+	if(resv_head == NULL) {
+                if(sv.sival_ptr == NULL)
+                        return;
+
+                timer_t *id = (timer_t*)sv.sival_ptr;
+                delete_timer(id);
+                sv.sival_ptr = NULL;
+        }
 }
 
-// Timer event handler for Resv
-//it will chk for path message and if no path message received session will expire
+//Timer event handler for seding RESV message
+//it will chk for PATH message every IntervaL 
+//no PATH message received for TIMEOUT sec
+//session will expire
 void resv_timer_handler(union sigval sv) {
     	time_t now = time(NULL);
 	struct session* temp = NULL;
@@ -60,7 +85,7 @@ void resv_timer_handler(union sigval sv) {
 	printf("timer handler \n");
         while(temp != NULL) {
                 if((now - temp->last_path_time) > TIMEOUT) {
-                        printf("RSVP session expired: %s->%s\n",temp->sender, temp->receiver);
+			printf("RSVP resv session expired: %s\t-->%s\n",temp->sender, temp->receiver);
                         path_head = delete_session(temp, temp->sender, temp->receiver);
                 } else if((now - temp->last_path_time) < INTERVAL) {
                         printf(" less than 30 sec\n");
@@ -82,22 +107,31 @@ void resv_timer_handler(union sigval sv) {
                 }
                 temp = temp->next;
         }
+	if(path_head == NULL) {
+		if(sv.sival_ptr == NULL)
+			return;
+
+		timer_t *id = (timer_t*)sv.sival_ptr;	
+		delete_timer(id);
+		sv.sival_ptr = NULL;
+	}
 }
 
 // Function to create a timer that triggers every 30 seconds
 timer_t create_timer(void (*handler)(union sigval)) {
     struct sigevent sev;
-    timer_t timerid;
+    timer_t *timerid = malloc(sizeof(timer_t));
 
     memset(&sev, 0, sizeof(struct sigevent));
     sev.sigev_notify = SIGEV_THREAD;
     sev.sigev_notify_function = handler;
+    sev.sigev_value.sival_ptr = timerid;
 
-    if (timer_create(CLOCK_REALTIME, &sev, &timerid) < 0) {
+    if (timer_create(CLOCK_REALTIME, &sev, timerid) < 0) {
         perror("Timer creation failed");
         exit(EXIT_FAILURE);
     }
-    return timerid;
+    return *timerid;
 }
 
 
@@ -106,7 +140,7 @@ void start_timer(timer_t timerid) {
     struct itimerspec its;
     its.it_value.tv_sec = 30;   // Initial delay
     its.it_value.tv_nsec = 0;
-    its.it_interval.tv_sec = 30; // Repeating interval
+    its.it_interval.tv_sec = INTERVAL; // Repeating interval
     its.it_interval.tv_nsec = 0;
 
     if (timer_settime(timerid, 0, &its, NULL) < 0) {
@@ -115,13 +149,32 @@ void start_timer(timer_t timerid) {
     }
 }
 
+int is_timer_active(timer_t *timer) {
+	struct itimerspec ts;
+	if(*timer == 0)
+		return 0;
+	
+	if(timer_gettime(*timer, &ts) == 0) {	
+		return (ts.it_value.tv_sec > 0 || ts.it_value.tv_nsec > 0);
+	} else {
+		*timer = 0;
+		return 0;
+	}
+}
+
 void path_event_handler() {
-        timer_t path_timer = create_timer(path_timer_handler);
+	if(is_timer_active(&path_timer)) {
+		return;
+	}
+        path_timer = create_timer(path_timer_handler);
         start_timer(path_timer);
 }
 
 void resv_event_handler() {
-        timer_t resv_timer = create_timer(resv_timer_handler);
+	if(is_timer_active(&resv_timer)) {
+                return;
+        }
+        resv_timer = create_timer(resv_timer_handler);
         start_timer(resv_timer);
 }
 
