@@ -11,19 +11,10 @@
 #include <time.h>
 #include <signal.h>
 
-int path_received = 0;
 int sock = 0;
-
-//struct in_addr sender_ip, receiver_ip;
-
-char sender_ip[16];
-char receiver_ip[16];
-
 
 struct session* path_head;
 struct session* resv_head;
-
-#define IP_ADDRLEN 16
 
 uint32_t ip_to_int(const char* ip_str) {
 	struct in_addr ip_addr;
@@ -33,8 +24,8 @@ uint32_t ip_to_int(const char* ip_str) {
 
 int main() {
 
-    struct in_addr sender_ip;
-    struct in_addr receiver_ip;
+    char buffer[512];
+    char sender_ip[16], receiver_ip[16];
     u_int8_t reached = 0;
 
     struct sockaddr_in addr;
@@ -52,8 +43,6 @@ int main() {
 	close(sock);
 	exit(EXIT_FAILURE);
     }
-
-    char buffer[1024];
 
     struct sockaddr_in sender_addr;
     socklen_t addr_len = sizeof(sender_addr);
@@ -79,16 +68,14 @@ int main() {
 
 			resv_event_handler();
 			// get ip from the received path packet
-			get_ip(buffer, &sender_ip, &receiver_ip);
+			get_ip(buffer, sender_ip, receiver_ip);
 		        reached = dst_reached(receiver_ip);
 	
 			printf("insert_path_session\n");
 	                if(path_head == NULL) {
-       		       		path_head = insert_session(path_head, inet_ntoa(sender_ip), inet_ntoa(receiver_ip), reached);
-				//path_head = insert_session(path_head, sender_ip.s_addr, receiver_ip.s_addr, reached);
+       		       		path_head = insert_session(path_head, sender_ip, receiver_ip, reached);
                		} else {
-                       	        insert_session(path_head, inet_ntoa(sender_ip), inet_ntoa(receiver_ip),reached);
-				//insert_session(path_head, sender_ip.s_addr, receiver_ip.s_add, reached);
+                       	        insert_session(path_head, sender_ip, receiver_ip,reached);
                         }
 			
 			receive_path_message(sock,buffer,sender_addr);	
@@ -101,16 +88,14 @@ int main() {
 
 			path_event_handler();
 			//get ip from the received resv msg
- 			get_ip(buffer, &sender_ip, &receiver_ip);
+ 			get_ip(buffer, sender_ip, receiver_ip);
 			reached = dst_reached(sender_ip);
 
                         printf("insert_resv_session\n");
                         if(resv_head == NULL) {
-                                resv_head = insert_session(resv_head, inet_ntoa(sender_ip), inet_ntoa(receiver_ip), reached);
-				//resv_head = insert_session(resv_head, sender_ip.s_addr, receiver_ip.s_add, reached);
+                                resv_head = insert_session(resv_head, sender_ip, receiver_ip, reached);
                         } else {
-                                insert_session(resv_head, inet_ntoa(sender_ip), inet_ntoa(receiver_ip), reached);
-				//insert_session(resv_head, sender_ip.s_addr, receiver_ip.s_add, reached);
+                                insert_session(resv_head, sender_ip, receiver_ip, reached);
                         }
 		
 			receive_resv_message(sock,buffer,sender_addr);

@@ -157,7 +157,7 @@ int print_route(struct nlmsghdr* nl_header_answer)
 	inet_ntop(r->rtm_family, RTA_DATA(tb[RTA_DST]), buf, sizeof(buf));
 	strcpy(route, buf);
         prefix_len = r->rtm_dst_len;	
-	printf("route = %s %d\n", route,prefix_len);
+	//printf("route = %s %d\n", route,prefix_len);
         //printf("%s/%u ", inet_ntop(r->rtm_family, RTA_DATA(tb[RTA_DST]), buf, sizeof(buf)), r->rtm_dst_len);
 
     } else if (r->rtm_dst_len) {
@@ -195,17 +195,15 @@ int print_route(struct nlmsghdr* nl_header_answer)
     if (tb[RTA_PREFSRC]) {
  	inet_ntop(r->rtm_family, RTA_DATA(tb[RTA_PREFSRC]), buf, sizeof(buf));
 	strcpy(src_ip, buf);
-	printf("src_ip = %s\n",src_ip);	
+	//printf("src_ip = %s\n",src_ip);	
 	//printf("src %s\n", inet_ntop(r->rtm_family, RTA_DATA(tb[RTA_PREFSRC]), buf, sizeof(buf)));
     }
 
     if(is_ip_in_subnet(dest_ip, route, prefix_len) == 1) {
 	printf("next hop for destination ip %s is -> %s\n", dest_ip, nh);
-	printf("\n next hop --- %s\n", nh);
 	return 1;
     } else {
 	return 0;
-	//printf("------ dest ip not found\n");
     }
 
     //printf("\n");
@@ -272,7 +270,7 @@ int get_route_dump_response(int sock)
     struct nlmsghdr *h = (struct nlmsghdr *)buf;
     int msglen = status;
 
-    printf("Main routing table IPv4\n");
+    //printf("Main routing table IPv4\n");
 
     while (NLMSG_OK(h, msglen)) {
         if (h->nlmsg_flags & NLM_F_DUMP_INTR) {
