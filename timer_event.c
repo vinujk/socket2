@@ -42,32 +42,26 @@ void path_timer_handler(union sigval sv) {
     temp = resv_head;
 
     printf("++++++++path timer handler \n");
-    if(temp ==  NULL)
-        printf("temp is nuLL");
     while(temp != NULL) {
+
+	if(temp->dest) {
+            printf("--------sending  path message\n");
+            send_path_message(sock, temp->tunnel_id);
+        }
+
         if((now - temp->last_path_time) > TIMEOUT) {
-            if(!temp->dest){
-                printf("RSVP path session expired: %s\t-->%s\n",temp->sender, temp->receiver);
-                resv_head = delete_session(temp, temp->sender, temp->receiver);
-                resv_tree = delete_node(resv_tree, temp->tunnel_id, compare_resv_del, 0);
+		if(!temp->dest) {
+			printf("RSVP path session expired: %s\t-->%s\n",temp->sender, temp->receiver);
+			resv_head = delete_session(resv_head, temp);
+		}
+		resv_tree = delete_node(resv_tree, temp->tunnel_id, compare_resv_del, 0);
                 display_tree(resv_tree, 0);
-            }
         } else if((now - temp->last_path_time) < INTERVAL) {
             printf(" less than 30 sec\n");
             temp = temp->next;
             continue;
         } else {
-            if(temp->dest) {
-                printf("--------sending  path message\n");
-
-                inet_pton(AF_INET, temp->sender, &sender_ip);
-                inet_pton(AF_INET, temp->receiver, &receiver_ip);
-
-                // Send RSVP-TE PATH Message
-                send_path_message(sock, temp->tunnel_id);
-            } else {
                 printf("not received resv msg\n");
-            }
         }
         temp = temp->next;
     }
@@ -90,12 +84,12 @@ void resv_timer_handler(union sigval sv) {
     struct session* temp = NULL;
     temp = path_head;
 
-    printf("timer handler \n");
+    printf("+++++++ resv timer handler \n");
     while(temp != NULL) {
         if((now - temp->last_path_time) > TIMEOUT) {
             printf("RSVP resv session expired: %s\t-->%s\n",temp->sender, temp->receiver);
-            path_head = delete_session(temp, temp->sender, temp->receiver);
             path_tree = delete_node(path_tree, temp->tunnel_id, compare_path_del, 1);
+            path_head = delete_session(path_head, temp);
             display_tree(path_tree, 1);
         } else if((now - temp->last_path_time) < INTERVAL) {
             printf(" less than 30 sec\n");
@@ -104,16 +98,10 @@ void resv_timer_handler(union sigval sv) {
         } else {
             if(temp->dest) {
                 printf("--------sending resv message\n");
-
-                inet_pton(AF_INET, temp->sender, &sender_ip);
-                inet_pton(AF_INET, temp->receiver, &receiver_ip);
-
-                // Send RSVP-TE RESV Message
                 send_resv_message(sock, temp->tunnel_id);
             } else {
                 printf("not received path msg\n");
             }
-
         }
         temp = temp->next;
     }

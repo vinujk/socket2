@@ -10,10 +10,11 @@
 #include <sys/socket.h>
 #include <linux/rtnetlink.h>
 
+
 static char dest_ip[16], nh[16], DEv[16];
 static uint32_t ifh;
-char src_ip[16];
 uint8_t prefix_len = 0;
+char src_ip[16];
 
 // Function to check if an IP is in a subnet
 int is_ip_in_subnet(const char *ip, const char *subnet, int prefix_len) {
@@ -36,27 +37,6 @@ int is_ip_in_subnet(const char *ip, const char *subnet, int prefix_len) {
     }
     return 0; // IP is not in the subnet
 }
-
-/*int rtnl_receive(int fd, struct msghdr *msg, int flags)
-{
-    int len;
-
-    do { 
-        len = recvmsg(fd, msg, flags);
-    } while (len < 0 && (errno == EINTR || errno == EAGAIN));
-
-    if (len < 0) {
-        perror("Netlink receive failed");
-        return -errno;
-    }
-
-    if (len == 0) { 
-        perror("EOF on netlink");
-        return -ENODATA;
-    }
-
-    return len;
-}*/
 
 static int rtnl_recvmsg(int fd, struct msghdr *msg, char **answer)
 {
@@ -180,9 +160,10 @@ int print_route(struct nlmsghdr* nl_header_answer)
         char if_nam_buf[IF_NAMESIZE];
         int ifidx = *(__u32 *)RTA_DATA(tb[RTA_OIF]);
 
-  	ifh = ifidx;
+	ifh = ifidx;
         dev = if_indextoname(ifidx, if_nam_buf);
-	strcpy(DEv, dev);
+        strcpy(DEv, dev);
+
         //printf("dev -- %s ifidx = %d buf = %s\n", dev,ifidx,if_nam_buf);
         //printf(" dev %s", if_indextoname(ifidx, if_nam_buf));
     }
@@ -203,7 +184,7 @@ int print_route(struct nlmsghdr* nl_header_answer)
     }
 
     if(is_ip_in_subnet(dest_ip, route, prefix_len) == 1) {
-        printf("next hop for destination ip %s is -> %s dev = %s ifh = %d\n", dest_ip, nh, DEv,ifh);
+	printf("next hop for destination ip %s is -> %s prefix_len = %d dev = %s ifh = %d\n", dest_ip,nh,prefix_len, DEv, ifh);
         return 1;
     } else {
         return 0;
@@ -305,7 +286,7 @@ int get_route_dump_response(int sock)
     return status;
 }
 
-int get_nexthop(const char *dst_ip, char *nh_ip, uint8_t *pref_len,char* Dev, int *Ifh)
+int get_nexthop(const char *dst_ip, char *nh_ip, uint8_t *pref_len, char* Dev, int *Ifh)
 {
 
     int temp = 0;
